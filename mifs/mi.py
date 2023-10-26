@@ -42,7 +42,7 @@ def _get_mi(f, s, MI_FS):
     if MI > 0:
         return MI
     else:
-        return np.nan
+        return 0  # np.nan
 
 
 def get_first_mi_vector(MI_FS, k):
@@ -70,7 +70,7 @@ def _get_first_mi(i, k, MI_FS):
     if MI > 0:
         return MI
     else:
-        return np.nan
+        return 0  # np.nan
 
 
 def _mi_dc(x, y, k):

@@ -8,7 +8,9 @@ License: BSD 3 clause
 import numpy as np
 from scipy.special import gamma, psi
 from sklearn.neighbors import NearestNeighbors
+from sklearn.feature_selection import mutual_info_regression
 from joblib import Parallel, delayed
+
 
 def get_mi_vector(MI_FS, F, s):
     """
@@ -32,17 +34,22 @@ def _get_mi(f, s, MI_FS):
             MI = _mi_dc(joint, MI_FS.y, MI_FS.k)
         else:
             vars = (joint, MI_FS.y)
-            MI = _mi_cc(vars, MI_FS.k)
+            # MI = _mi_cc(vars, MI_FS.k)  # modif. debug MI by jowike
+            MI_E = mutual_info_regression(vars[0], vars[1], n_neighbors=MI_FS.k)
+            MI = MI_E[0]
     else:
         # MRMR
         vars = (MI_FS.X[:, s].reshape(n, 1), MI_FS.X[:, f].reshape(n, 1))
-        MI = _mi_cc(vars, MI_FS.k)
+        # MI = _mi_cc(vars, MI_FS.k)  # modif. debug MI by jowike
+         
+        MI_E = mutual_info_regression(vars[0], vars[1], n_neighbors=MI_FS.k)
+        MI = MI_E[0]
 
     # MI must be non-negative
-    if MI > 0:
+    if MI >= 0:  # modif. debug MI by jowike
         return MI
     else:
-        return 0  # np.nan
+        return np.nan
 
 
 def get_first_mi_vector(MI_FS, k):
@@ -59,18 +66,22 @@ def get_first_mi_vector(MI_FS, k):
 
 def _get_first_mi(i, k, MI_FS):
     n, p = MI_FS.X.shape
+
     if MI_FS.categorical:
         x = MI_FS.X[:, i].reshape((n, 1))
         MI = _mi_dc(x, MI_FS.y, k)
     else:
         vars = (MI_FS.X[:, i].reshape((n, 1)), MI_FS.y)
-        MI = _mi_cc(vars, k)
+        # MI = _mi_cc(vars, k)  # modif. debug MI by jowike
+         
+        MI_E = mutual_info_regression(vars[0], vars[1], n_neighbors=k)
+        MI = MI_E[0]
 
     # MI must be non-negative
-    if MI > 0:
+    if MI >= 0:  # modif. debug MI by jowike
         return MI
     else:
-        return 0  # np.nan
+        return np.nan
 
 
 def _mi_dc(x, y, k):
@@ -114,18 +125,18 @@ def _mi_dc(x, y, k):
     return MI
 
 
-def _mi_cc(variables, k=1):
-    """
-    Returns the mutual information between any number of variables.
+# def _mi_cc(variables, k=1):
+#     """
+#     Returns the mutual information between any number of variables.
 
-    Here it is used to estimate MI between continuous X(s) and y.
-    Written by Gael Varoquaux:
-    https://gist.github.com/GaelVaroquaux/ead9898bd3c973c40429
-    """
+#     Here it is used to estimate MI between continuous X(s) and y.
+#     Written by Gael Varoquaux:
+#     https://gist.github.com/GaelVaroquaux/ead9898bd3c973c40429
+#     """
 
-    all_vars = np.hstack(variables)
-    return (sum([_entropy(X, k=k) for X in variables]) -
-            _entropy(all_vars, k=k))
+#     all_vars = np.hstack(variables)
+#     return (sum([_entropy(X, k=k) for X in variables]) -
+#             _entropy(all_vars, k=k))
 
 
 def _nearest_distances(X, k=1):
